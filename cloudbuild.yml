@@ -1,0 +1,20 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'southamerica-west1-docker.pkg.dev/microservices-nest-dev/register-nest-dev/nest-microservices-products:1.0.0',
+        '-f',
+        'dockerfile.prod',
+        '--platform=linux/amd64',
+        '.',
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'southamerica-west1-docker.pkg.dev/microservices-nest-dev/register-nest-dev/nest-microservices-products:1.0.0',
+      ]
+options:
+  logging: CLOUD_LOGGING_ONLY
