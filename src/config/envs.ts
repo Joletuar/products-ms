@@ -5,21 +5,18 @@ import * as joi from 'joi';
 interface EnvVars {
   PORT: number;
   DATABASE_URL: string;
-  NATS_SERVER: Array<string>;
+  RABBITMQ_SERVER: string;
 }
 
 const envVarsSchema = joi
   .object({
     PORT: joi.number().default(3000),
     DATABASE_URL: joi.string().required(),
-    NATS_SERVER: joi.array().items(joi.string()).required(),
+    RABBITMQ_SERVER: joi.string().required(),
   })
   .unknown(true);
 
-const { error, value } = envVarsSchema.validate({
-  ...process.env,
-  NATS_SERVER: process.env.NATS_SERVER?.split(','),
-});
+const { error, value } = envVarsSchema.validate(process.env);
 
 if (error) {
   throw new Error(`Config validation error: ${error.message}`);
@@ -31,5 +28,5 @@ export const envs = {
   port: envVars.PORT,
   databaseUrl: envVars.DATABASE_URL,
 
-  NATS_SERVER: envVars.NATS_SERVER,
+  RABBITMQ_SERVER: envVars.RABBITMQ_SERVER,
 };
