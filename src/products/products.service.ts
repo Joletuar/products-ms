@@ -1,14 +1,27 @@
-import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { PrismaClient } from '@prisma/client';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationDto } from './dto/pagination.dto';
+import { Cache } from 'cache-manager';
+import { FindAllResponse } from './interfaces/find-all-response.interface';
 
 @Injectable()
 export class ProductsService extends PrismaClient implements OnModuleInit {
+  constructor(@Inject(CACHE_MANAGER) private readonly cacheManager: Cache) {
+    super();
+  }
+
   private readonly logger = new Logger(ProductsService.name);
 
   onModuleInit() {
@@ -18,12 +31,20 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async create(createProductDto: CreateProductDto) {
+    this.cacheManager.reset();
+
     return await this.product.create({
       data: createProductDto,
     });
   }
 
   async findAll(paginationDto: PaginationDto) {
+    const productsCache = await this.cacheManager.get<FindAllResponse>(
+      'products',
+    );
+
+    if (productsCache) return productsCache;
+
     const { page = 1, limit = 10, filter } = paginationDto;
 
     const offset = (page - 1) * limit;
@@ -31,7 +52,7 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     const totalPages = await this.product.count();
     const lastPage = Math.ceil(totalPages / limit);
 
-    return {
+    const products = {
       data: await this.product.findMany({
         where: {
           name: {
@@ -50,6 +71,10 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
         lastPage,
       },
     };
+
+    this.cacheManager.set('products', products, 1000 * 5); // la cache se maneja en la capa de los repositorios
+
+    return products;
   }
 
   async findOne(id: number) {
