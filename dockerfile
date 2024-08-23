@@ -12,5 +12,4 @@ RUN pnpm install
 
 COPY . .
 
-ARG PORT
-EXPOSE $PORT
+EXPOSE 3000
